@@ -2,18 +2,20 @@
 #define __WSERIAL_H
 
 #include <Arduino.h>
-#include "ESPTelnet.h"
 
 #define BAUD_RATE 115200UL
-class WSerial_c : public ESPTelnet
+class WSerial_c
 {
+  typedef void (*CallbackFunction)(String str);
 protected: 
   //uint16_t server_port = 0;
   void update(void);
-  void start(uint16_t port, unsigned long baudrate = BAUD_RATE);
+  void start(unsigned long baudrate = BAUD_RATE);
+  CallbackFunction on_connect = NULL;
 
 public:
-  WSerial_c() : ESPTelnet() {};
+  WSerial_c() {};
+  void onConnect(CallbackFunction f);
   template <typename T>
   void plot(const char *varName, T x, T y, const char *unit = NULL);
   template <typename T>
@@ -29,52 +31,27 @@ public:
   void println(const T &data, int base);
 
   
-  friend inline void startWSerial(WSerial_c *ws,uint16_t port, unsigned long baudrate = BAUD_RATE);
+  friend inline void startWSerial(WSerial_c *ws, unsigned long baudrate = BAUD_RATE);
   friend inline void updateWSerial(WSerial_c *ws); 
-  uint16_t serverPort() { return (this->server_port); }
-  bool isConnected();
 };
 
-inline bool WSerial_c::isConnected()
+inline void startWSerial(WSerial_c *ws, unsigned long baudrate){ws->start(baudrate);}
+void WSerial_c::start(unsigned long baudrate)
 {
-  return ((ESPTelnet *) this)->isConnected();
+  Serial.begin(baudrate);
 }
 
-inline void startWSerial(WSerial_c *ws,uint16_t port, unsigned long baudrate){ws->start(port, baudrate);}
-void WSerial_c::start(uint16_t port, unsigned long baudrate)
-{
-  if(isConnected()) ((ESPTelnet *) this)->stop();
-  server_port = port;
-  onDisconnect([](String ip)
-               {
-        Serial.print("- Telnet: ");
-        Serial.print(ip);
-        Serial.println(" disconnected"); });
-  onConnectionAttempt([](String ip)
-                      {
-        Serial.print("- Telnet: ");
-        Serial.print(ip);
-        Serial.println(" tried to connected"); });
-  onReconnect([](String ip)
-              {
-        Serial.print("- Telnet: ");
-        Serial.print(ip);
-        Serial.println(" reconnected"); });
-
-  if(!(((ESPTelnet *) this)->begin(server_port))) Serial.begin(baudrate);
-}
+void WSerial_c::onConnect(CallbackFunction f) {
+  on_connect = f;
+}  
 
 inline void updateWSerial(WSerial_c *ws) {ws->update();}
 void WSerial_c::update(void)
 {
-  if (isConnected())
+  if (Serial.available() && on_input != NULL)
   {
-    if (Serial.available() && on_input != NULL)
-    {
-      on_input(Serial.readStringUntil('\n'));
-    }
+    on_input(Serial.readStringUntil('\n'));
   }
-  ((ESPTelnet *) this)->loop();
 }
 
 template <typename T>
@@ -102,44 +79,29 @@ void WSerial_c::plot(const char *varName, T x, T y, const char *unit)
 template <typename T>
 void WSerial_c::print(const T &data)
 {
-  if (((ESPTelnet *) this)->isConnected())
-    ((ESPTelnet *) this)->print(data);  
-  else
     Serial.print(data);  
 }
 
 template <typename T>
 void WSerial_c::print(const T &data, int base)
 {
-  if (((ESPTelnet *) this)->isConnected())
-    ((ESPTelnet *) this)->print(data, base);  
-  else
     Serial.print(data, base);  
 }
 
 template <typename T>
 void WSerial_c::println(const T &data)
 {
-  if (((ESPTelnet *) this)->isConnected())
-    ((ESPTelnet *) this)->println(data);  
-  else
     Serial.println(data);  
 }
 
 template <typename T>
 void WSerial_c::println(const T &data, int base)
 {
-  if (((ESPTelnet *) this)->isConnected())
-    ((ESPTelnet *) this)->println(data, base);  
-  else
     Serial.println(data, base);  
 }
 
 void WSerial_c::println()
 {
-  if (((ESPTelnet *) this)->isConnected())
-    ((ESPTelnet *) this)->println();  
-  else
     Serial.println();
 }
 #endif
