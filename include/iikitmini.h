@@ -11,12 +11,14 @@
 #define __IIDKITMINI_H
 
 #include <Arduino.h>
+
 #include "services/display_c.h"
 #include "services/ads1115_c.h"
 #include "services/WSerialmini_c.h"
 
 /********** GPIO DEFINITIONS ***********/
-#define def_pin_ADC1 39    ///< GPIO para entrada ADC1.
+#define def_pin_ADC1 39    ///< GPIO para entrada ADC1. ADC1_CHANNEL_3
+#define def_pin_ADC2 36    ///< GPIO para entrada ADC2. ADC1_CHANNEL_0
 #define def_pin_RTN2 35    ///< GPIO para botão retentivo 2.
 #define def_pin_PUSH1 34   ///< GPIO para botão push 1.
 #define def_pin_PWM 33     ///< GPIO para saída PWM.

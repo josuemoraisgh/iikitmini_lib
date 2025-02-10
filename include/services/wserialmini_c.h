@@ -10,7 +10,7 @@ class WSerialmini_c
 protected: 
   //uint16_t server_port = 0;
   void update(void);
-  void start(unsigned long baudrate = BAUD_RATE);
+  void start(unsigned long baudrate);
   CallbackFunction on_input = NULL;
 
 public:
@@ -31,12 +31,12 @@ public:
   void println(const T &data, int base);
 
   
-  friend inline void startWSerialmini(WSerialmini_c *ws, unsigned long baudrate = BAUD_RATE);
+  friend inline void startWSerialmini(WSerialmini_c *ws, unsigned long baudrate);
   friend inline void updateWSerialmini(WSerialmini_c *ws); 
 };
 
-inline void startWSerialmini(WSerialmini_c *ws, unsigned long baudrate){ws->start(baudrate);}
-void WSerialmini_c::start(unsigned long baudrate)
+inline void startWSerialmini(WSerialmini_c *ws, unsigned long baudrate = BAUD_RATE){ws->start(baudrate);}
+void WSerialmini_c::start(unsigned long baudrate = BAUD_RATE)
 {
   Serial.begin(baudrate);
 }
