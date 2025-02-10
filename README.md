@@ -1,4 +1,4 @@
-# IIkit
+# IIkitmini
 
 **Versão:** 0.0.1  
 **Autor:** josuemoraisgh
@@ -6,6 +6,7 @@
 ## Descrição
 
 IIkit é uma biblioteca destinada à configuração e gerenciamento de módulos ESP8266/ESP32 para instrumentação. Ela facilita a configuração de credenciais WiFi e a definição de parâmetros customizados em tempo de execução por meio de um portal cativo, além de incluir utilitários e funções auxiliares para diversas tarefas comuns em aplicações IoT.
+Esta versão IIkitmini é uma versão sem wifi e comunicação hart. Caso deseje estes recursos procure a versão IIkit.
 
 ## Recursos
 
