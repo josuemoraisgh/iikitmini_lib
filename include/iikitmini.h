@@ -13,7 +13,7 @@
 #include <Arduino.h>
 #include "services/display_c.h"
 #include "services/ads1115_c.h"
-#include "services/hart_c.h"
+#include "services/WSerialmini_c.h"
 
 /********** GPIO DEFINITIONS ***********/
 #define def_pin_ADC1 39    ///< GPIO para entrada ADC1.
@@ -48,11 +48,10 @@ class IIKitmini_c
 {
 private:
     ADS1115_c ads;                  ///< Conversor ADC.
-    Hart_c hart;
 
 public:
     Display_c disp;    ///< Display OLED.
-    WSerial_c WSerial; ///< Conexão Telnet e Serial.
+    WSerialmini_c WSerial; ///< Conexão Telnet e Serial.
 
     /**
      * @brief Inicializa o kit industrial.

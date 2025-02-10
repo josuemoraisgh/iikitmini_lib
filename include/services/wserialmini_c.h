@@ -1,10 +1,10 @@
-#ifndef __WSERIAL_H
-#define __WSERIAL_H
+#ifndef __WSERIALmini_H
+#define __WSERIALmini_H
 
 #include <Arduino.h>
 
 #define BAUD_RATE 115200UL
-class WSerial_c
+class WSerialmini_c
 {
   typedef void (*CallbackFunction)(String str);
 protected: 
@@ -35,8 +35,8 @@ public:
   friend inline void updateWSerial(WSerial_c *ws); 
 };
 
-inline void startWSerial(WSerial_c *ws, unsigned long baudrate){ws->start(baudrate);}
-void WSerial_c::start(unsigned long baudrate)
+inline void startWSerial(WSerialmini_c *ws, unsigned long baudrate){ws->start(baudrate);}
+void WSerialmini_c::start(unsigned long baudrate)
 {
   Serial.begin(baudrate);
 }
@@ -45,8 +45,8 @@ void WSerial_c::onConnect(CallbackFunction f) {
   on_connect = f;
 }  
 
-inline void updateWSerial(WSerial_c *ws) {ws->update();}
-void WSerial_c::update(void)
+inline void updateWSerial(WSerialmini_c *ws) {ws->update();}
+void WSerialmini_c::update(void)
 {
   if (Serial.available() && on_input != NULL)
   {
@@ -55,12 +55,12 @@ void WSerial_c::update(void)
 }
 
 template <typename T>
-void WSerial_c::plot(const char *varName, T y, const char *unit)
+void WSerialmini_c::plot(const char *varName, T y, const char *unit)
 {
   plot(varName, (T)millis(), y, unit);
 }
 template <typename T>
-void WSerial_c::plot(const char *varName, T x, T y, const char *unit)
+void WSerialmini_c::plot(const char *varName, T x, T y, const char *unit)
 {
   print(">"); // Inicio de envio de dados para um gráfico.
   print(varName);
@@ -77,30 +77,30 @@ void WSerial_c::plot(const char *varName, T x, T y, const char *unit)
 }
 
 template <typename T>
-void WSerial_c::print(const T &data)
+void WSerialmini_c::print(const T &data)
 {
     Serial.print(data);  
 }
 
 template <typename T>
-void WSerial_c::print(const T &data, int base)
+void WSerialmini_c::print(const T &data, int base)
 {
     Serial.print(data, base);  
 }
 
 template <typename T>
-void WSerial_c::println(const T &data)
+void WSerialmini_c::println(const T &data)
 {
     Serial.println(data);  
 }
 
 template <typename T>
-void WSerial_c::println(const T &data, int base)
+void WSerialmini_c::println(const T &data, int base)
 {
     Serial.println(data, base);  
 }
 
-void WSerial_c::println()
+void WSerialmini_c::println()
 {
     Serial.println();
 }
