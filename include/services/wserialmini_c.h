@@ -11,11 +11,11 @@ protected:
   //uint16_t server_port = 0;
   void update(void);
   void start(unsigned long baudrate = BAUD_RATE);
-  CallbackFunction on_connect = NULL;
+  CallbackFunction on_input = NULL;
 
 public:
-  WSerial_c() {};
-  void onConnect(CallbackFunction f);
+  WSerialmini_c() {};
+  void onInput(CallbackFunction f);
   template <typename T>
   void plot(const char *varName, T x, T y, const char *unit = NULL);
   template <typename T>
@@ -31,21 +31,21 @@ public:
   void println(const T &data, int base);
 
   
-  friend inline void startWSerial(WSerial_c *ws, unsigned long baudrate = BAUD_RATE);
-  friend inline void updateWSerial(WSerial_c *ws); 
+  friend inline void startWSerialmini(WSerialmini_c *ws, unsigned long baudrate = BAUD_RATE);
+  friend inline void updateWSerialmini(WSerialmini_c *ws); 
 };
 
-inline void startWSerial(WSerialmini_c *ws, unsigned long baudrate){ws->start(baudrate);}
+inline void startWSerialmini(WSerialmini_c *ws, unsigned long baudrate){ws->start(baudrate);}
 void WSerialmini_c::start(unsigned long baudrate)
 {
   Serial.begin(baudrate);
 }
 
-void WSerial_c::onConnect(CallbackFunction f) {
-  on_connect = f;
+void WSerialmini_c::onInput(CallbackFunction f) {
+  on_input = f;
 }  
 
-inline void updateWSerial(WSerialmini_c *ws) {ws->update();}
+inline void updateWSerialmini(WSerialmini_c *ws) {ws->update();}
 void WSerialmini_c::update(void)
 {
   if (Serial.available() && on_input != NULL)

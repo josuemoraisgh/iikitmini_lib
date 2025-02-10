@@ -91,9 +91,8 @@ public:
 void IIKitmini_c::setup()
 {
     /****** Inicializando Telnet|Serial***********/
-    startWSerial(&WSerial, 4000, 115200UL);  
+    startWSerialmini(&WSerial, 115200UL);  
     WSerial.println("Booting");
-    hart.setup(&WSerial);
     /********** Inicializando Display ***********/
     if (startDisplay(&disp, def_pin_SDA, def_pin_SCL))
     {
@@ -131,7 +130,7 @@ void IIKitmini_c::setup()
 
 void IIKitmini_c::loop(void)
 {
-    updateWSerial(&WSerial);
+    updateWSerialmini(&WSerial);
     updateDisplay(&disp);
 }
 
