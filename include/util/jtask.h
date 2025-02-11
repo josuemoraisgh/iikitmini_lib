@@ -40,15 +40,6 @@ struct TaskConfig_t {
 TaskConfig_t jtaskStruct[NUMTASKS];
 
 /**
- * @brief Inicializa o sistema de tarefas.
- *
- * Esta função pode ser utilizada para futuras inicializações, se necessário.
- */
-void jtaskSetup() {
-  // Nenhuma inicialização específica é necessária neste modelo.
-}
-
-/**
  * @brief Registra uma nova tarefa para execução periódica.
  *
  * @param task Ponteiro para a função da tarefa.
