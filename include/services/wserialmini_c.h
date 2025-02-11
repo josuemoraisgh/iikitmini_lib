@@ -17,6 +17,8 @@ public:
   WSerialmini_c() {};
   void onInput(CallbackFunction f);
   template <typename T>
+  void plot(const char *varName, uint32_t x, T y, size_t ylen, const char *unit  = NULL); 
+  template <typename T>
   void plot(const char *varName, uint32_t x, T y, const char *unit = NULL);
   template <typename T>
   void plot(const char *varName, T y, const char *unit = NULL);
@@ -52,6 +54,27 @@ void WSerialmini_c::update(void)
   {
     on_input(Serial.readStringUntil('\n'));
   }
+}
+
+template <typename T>
+void WSerialmini_c::plot(const char *varName, uint32_t x, T y, size_t ylen, const char *unit)
+{
+  print(">"); // Inicio de envio de dados para um gráfico.
+  print(varName);
+  print(":");  
+  for (size_t i = 0; i < ylen; i++)
+  {
+      print(i*x);
+      print(":");
+      print( (uint16_t) (abs(y[i]) & 0x0FFF));
+      if(i < ylen -1) print(",");
+  }
+  if (unit != NULL)
+  {
+    print("§"); // Unidade na sequência
+    print(unit);
+  }
+  println("|g"); // Modo Grafico  
 }
 
 template <typename T>
