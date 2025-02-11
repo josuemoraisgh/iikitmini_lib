@@ -17,7 +17,7 @@ public:
   WSerialmini_c() {};
   void onInput(CallbackFunction f);
   template <typename T>
-  void plot(const char *varName, T x, T y, const char *unit = NULL);
+  void plot(const char *varName, uint32_t x, T y, const char *unit = NULL);
   template <typename T>
   void plot(const char *varName, T y, const char *unit = NULL);
   template <typename T>
@@ -57,10 +57,10 @@ void WSerialmini_c::update(void)
 template <typename T>
 void WSerialmini_c::plot(const char *varName, T y, const char *unit)
 {
-  plot(varName, (T)millis(), y, unit);
+  plot(varName, millis(), y, unit);
 }
 template <typename T>
-void WSerialmini_c::plot(const char *varName, T x, T y, const char *unit)
+void WSerialmini_c::plot(const char *varName, uint32_t x, T y, const char *unit)
 {
   print(">"); // Inicio de envio de dados para um gráfico.
   print(varName);
