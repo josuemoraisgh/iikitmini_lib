@@ -16,6 +16,10 @@
 
 #include <driver/i2s.h>
 
+
+#define CHANNEL_ADC1 ADC1_CHANNEL_0
+#define CHANNEL_ADC2 ADC1_CHANNEL_3
+
 // Número de buffers DMA (padrão: 4)
 #ifndef DMA_BUFFERS
 #define DMA_BUFFERS 4

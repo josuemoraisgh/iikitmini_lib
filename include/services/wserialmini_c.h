@@ -67,7 +67,7 @@ void WSerialmini_c::plot(const char *varName, uint32_t x, T y, size_t ylen, cons
       print(i*x);
       print(":");
       print( (uint16_t) (abs(y[i]) & 0x0FFF));
-      if(i < ylen -1) print(",");
+      if(i < ylen -1) print(";");
   }
   if (unit != NULL)
   {
