@@ -8,7 +8,7 @@ class WSerialmini_c
 {
   typedef void (*CallbackFunction)(String str);
 protected: 
-  //uint16_t server_port = 0;
+  uint64_t _count = 0;
   void update(void);
   void start(unsigned long baudrate);
   CallbackFunction on_input = NULL;
@@ -64,7 +64,7 @@ void WSerialmini_c::plot(const char *varName, uint32_t x, T y, size_t ylen, cons
   print(":");  
   for (size_t i = 0; i < ylen; i++)
   {
-      print(i*x);
+      print(_count*x);
       print(":");
       print( (uint16_t) (abs(y[i]) & 0x0FFF));
       if(i < ylen -1) print(";");
