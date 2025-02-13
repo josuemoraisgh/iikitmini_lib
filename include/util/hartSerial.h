@@ -1,8 +1,6 @@
 #ifndef HART_SERIAL_H
 #define HART_SERIAL_H
 
-#include <Arduino.h>
-
 class HartSerial {
 public:
     HartSerial(uint32_t baudRate = 115200) {
