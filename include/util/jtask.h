@@ -44,18 +44,36 @@ TaskConfig_t jtaskStruct[NUMTASKS];
  *
  * @param task Ponteiro para a função da tarefa.
  * @param period Período da tarefa (em microssegundos).
- * @return true se a tarefa foi registrada com sucesso, false se o número máximo foi atingido.
+ * @return Endereço (handle) da tarefa no registro.
  *
  * Ao registrar a tarefa, o instante atual é armazenado para controle do período.
  */
-bool jtaskAttachFunc(void (*task)(), unsigned long period) {
-  if (jtaskIndex >= NUMTASKS) return false;  // Verifica se já atingiu o máximo de tarefas
+uint8_t jtaskAttachFunc(void (*task)(), unsigned long period) {
+  if (jtaskIndex >= NUMTASKS) return -1;  // Verifica se já atingiu o máximo de tarefas
   
   jtaskStruct[jtaskIndex].lastExec = micros();
   jtaskStruct[jtaskIndex].period   = period;
   jtaskStruct[jtaskIndex].task     = task;
+  const uint8_t retorno = jtaskIndex;
   jtaskIndex++;
-  return true;
+  return retorno;
+}
+
+/**
+ * @brief Altera o periodo de uma tarefa já registrada.
+ *
+ * @param handle Endereço da tarefa que será alterada.
+ * @param period Período da tarefa (em microssegundos).
+ * @return handle se a tarefa foi registrada com sucesso, -1 se houve falha.
+ *
+ * Ao alterar o registro da tarefa, o instante atual é armazenado para controle do período.
+ */
+uint8_t jtaskChangePeriod(uint8_t handle, unsigned long period) {
+  if (handle >= jtaskIndex) return -1;  // Esta tarefa não foi registrada
+  
+  jtaskStruct[handle].lastExec = micros();
+  jtaskStruct[handle].period   = period;
+  return handle;
 }
 
 /**
