@@ -16,7 +16,6 @@
 
 #include <driver/i2s.h>
 
-
 #define CHANNEL_ADC1 ADC1_CHANNEL_0
 #define CHANNEL_ADC2 ADC1_CHANNEL_3
 
@@ -35,10 +34,10 @@
  *
  * O callback deve receber um ponteiro para os dados de 16 bits lidos e o número de amostras.
  */
-typedef void (*ADCCallback)(const int16_t *data, size_t count);
+typedef void (*CallbackADC)(const int16_t *data, size_t count);
 
 /** Callback que será invocado quando os dados forem adquiridos */
-ADCCallback _adcDmaEspcallback;
+CallbackADC _callbackFunc;
 
 /**
  * @brief Buffer DMA para armazenamento dos dados lidos.
@@ -48,7 +47,7 @@ ADCCallback _adcDmaEspcallback;
 __attribute__((aligned(16))) int16_t dma_buffer[DMA_BUFFERS * BUFFER_LEN];
 
 /** Intervalo de plotagem em milissegundos */
-uint32_t _plotInterval = 0;
+uint32_t _callbackPeriod = 0;
 /** Última vez que os dados foram plotados (millis) */
 uint32_t _last_plot = 0;
 
@@ -59,15 +58,17 @@ uint32_t _last_plot = 0;
  * a atenuação, e instala o driver I2S no modo ADC built-in. Após a instalação, o ADC é habilitado.
  *
  * @param channel Canal ADC (do tipo adc1_channel_t) a ser utilizado (ex: ADC1_CHANNEL_0, ADC1_CHANNEL_3, etc.).
- * @param callback Função de callback que será invocada com os dados adquiridos.
+ * @param samplePeriod Taxa de amostragem em microsegundos do DMA (padrão: 1000 us).
+ * @param callbackFunc Função de callback caso deseje, que será invocada com os dados adquiridos do DMA ate aquele instante.
+ * @param callbackPeriod Intervalo de execução do callback em microsegundos (padrão: 100000 us).
  * @param width_bit Largura dos bits para conversão ADC (padrão ADC_WIDTH_BIT_12).
- * @param sample_rate Taxa de amostragem em Hz (padrão: 1000 Hz).
- * @param plotInterval Intervalo em milissegundos para invocar o callback (padrão: 100 ms).
+ *
  */
-void adcDmaSetup(adc1_channel_t channel, ADCCallback callback, adc_bits_width_t width_bit = ADC_WIDTH_BIT_12, uint32_t sample_rate = 1000, uint32_t plotInterval = 100)
+void adcDmaSetup(adc1_channel_t channel, uint32_t samplePeriod = 1000UL, CallbackADC callbackFunc = nullptr, uint32_t callbackPeriod = 100000UL, adc_bits_width_t width_bit = ADC_WIDTH_BIT_12)
 {
-  _adcDmaEspcallback = callback;
-  _plotInterval = plotInterval;
+  const uint32_t sample_rate = (uint32_t)1000000UL / samplePeriod; // Frequencia de amostragem em hz
+  _callbackFunc = callbackFunc;
+  _callbackPeriod = callbackPeriod;
 
   // Adquire energia para o ADC
   adc_power_acquire();
@@ -115,13 +116,16 @@ void adcDmaSetup(adc1_channel_t channel, ADCCallback callback, adc_bits_width_t 
 void adcDmaLoop()
 {
   // Se o intervalo de plotagem foi atingido, chama o callback com os dados lidos
-  if (millis() - _last_plot >= _plotInterval)
+  if (_callbackFunc != nullptr)
   {
-    size_t bytes_read;
-    esp_err_t err = i2s_read(I2S_NUM_0, dma_buffer, sizeof(dma_buffer), &bytes_read, 0);
-    if (err == ESP_OK)
-      _adcDmaEspcallback(dma_buffer, (uint16_t)(bytes_read / sizeof(int16_t)));
-    _last_plot = millis();
+    if (micros() - _last_plot >= _callbackPeriod)
+    {
+      size_t bytes_read;
+      esp_err_t err = i2s_read(I2S_NUM_0, dma_buffer, sizeof(dma_buffer), &bytes_read, 0);
+      if (err == ESP_OK)
+        _callbackFunc(dma_buffer, (uint16_t)(bytes_read / sizeof(int16_t)));
+      _last_plot = micros();
+    }
   }
 }
 
