@@ -9,7 +9,7 @@ public:
 
     void begin() {
         Serial.begin(baudRate);
-        Serial2.begin(1200, SERIAL_8N1, 16, 17,true);
+        Serial2.begin(1200, SERIAL_8O1, 16, 17);      
     }
 
     void update() {
