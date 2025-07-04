@@ -78,8 +78,8 @@ bool detectWokwiByMac()
                   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
     // Verifica se o MAC é 24:0A:C4:00:01:10 (Wokwi padrão)
-    return (mac[0] == 0x24 && mac[1] == 0x0A && mac[2] == 0xC4 &&
-            mac[3] == 0x00 && mac[4] == 0x01 && mac[5] == 0x10);
+    return (mac[0] == 0x24 && mac[1] == 0x0A && mac[2] == 0xC4 && mac[3] == 0x00 && mac[4] == 0x01 && mac[5] == 0x10) ||
+           (mac[0] == 0x00 && mac[1] == 0x00 && mac[2] == 0x00 && mac[3] == 0x00 && mac[4] == 0x00 && mac[5] == 0x00);
 }
 
 /**
@@ -112,7 +112,7 @@ void adcDmaSetup(
 
     // Detecta ambiente Wokwi pelo MAC address
     if (detectWokwiByMac()) {
-        Serial.println("MAC 24:0A:C4:00:01:10 detectado! Ativando fallback para leitura direta do ADC.");
+        //Serial.println("MAC 24:0A:C4:00:01:10 detectado! Ativando fallback para leitura direta do ADC.");
         _adc_fallback_mode = true;
         return;
     }
