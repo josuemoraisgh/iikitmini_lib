@@ -16,7 +16,8 @@
 
 #include <driver/i2s.h>
 #include <Arduino.h>
-#include <esp_wifi.h>  // Necessário para esp_read_mac
+#include <esp_system.h>  // Necessário para esp_read_mac
+#include <esp_wifi.h>    // Para ESP_MAC_WIFI_STA
 
 #define CHANNEL_ADC1 ADC1_CHANNEL_0
 #define CHANNEL_ADC2 ADC1_CHANNEL_3
@@ -71,7 +72,12 @@ bool detectWokwiByMac()
 {
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    // Verifica se o MAC é 24:0A:C4:00:01:10
+
+    // Exibe o MAC detectado para debug
+    Serial.printf("MAC detectado: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    // Verifica se o MAC é 24:0A:C4:00:01:10 (Wokwi padrão)
     return (mac[0] == 0x24 && mac[1] == 0x0A && mac[2] == 0xC4 &&
             mac[3] == 0x00 && mac[4] == 0x01 && mac[5] == 0x10);
 }
@@ -100,6 +106,9 @@ void adcDmaSetup(
     _callbackPeriod = callbackPeriod;
     _adc_channel = channel;
     _adc_fallback_mode = false; // Tenta modo DMA/I2S
+
+    Serial.begin(115200);  // Garante que Serial está iniciado
+    delay(100);  // Pequeno delay para estabilizar o sistema antes de ler MAC
 
     // Detecta ambiente Wokwi pelo MAC address
     if (detectWokwiByMac()) {
