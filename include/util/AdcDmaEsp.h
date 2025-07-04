@@ -1,20 +1,22 @@
 /**
  * @file AdcDmaEsp.h
  * @author josuemorais
- * @version 1.0
- * @date 2023-08-30
+ * @version 1.1
+ * @date 2024-07-04
  *
- * @brief Driver para leitura de ADC via I2S com DMA no ESP32
+ * @brief Driver para leitura de ADC via I2S com DMA no ESP32, com fallback automático para leitura direta em simuladores (ex: Wokwi).
  *
  * Esta biblioteca permite a leitura de dados analógicos usando o periférico I2S
- * com DMA para aquisição de alta performance. Utiliza o ADC1 e fornece os dados
- * através de um sistema de callback.
+ * com DMA para aquisição de alta performance, mas detecta em tempo de execução
+ * se o periférico está disponível. Caso não esteja (por exemplo, no simulador Wokwi),
+ * utiliza leitura direta do ADC em modo fallback.
  */
 
 #ifndef ADCDMAESP_H
 #define ADCDMAESP_H
 
 #include <driver/i2s.h>
+#include <Arduino.h>
 
 #define CHANNEL_ADC1 ADC1_CHANNEL_0
 #define CHANNEL_ADC2 ADC1_CHANNEL_3
@@ -46,39 +48,50 @@ CallbackADC _callbackFunc;
  */
 __attribute__((aligned(16))) int16_t dma_buffer[DMA_BUFFERS * BUFFER_LEN];
 
-/** Intervalo de plotagem em milissegundos */
+/**
+ * @brief Buffer alternativo para fallback (leitura direta do ADC).
+ */
+int16_t fallback_buffer[BUFFER_LEN];
+
+/** Intervalo de plotagem em microsegundos */
 uint32_t _callbackPeriod = 0;
-/** Última vez que os dados foram plotados (millis) */
+/** Última vez que os dados foram plotados (micros) */
 uint32_t _last_plot = 0;
+/** Canal atual do ADC utilizado */
+int _adc_channel = CHANNEL_ADC1;
+/** Modo fallback: leitura direta do ADC se I2S/DMA indisponível */
+bool _adc_fallback_mode = false;
 
 /**
  * @brief Configura o ADC via DMA utilizando o I2S built-in do ESP32.
  *
- * Esta função configura o ADC (ADC1) para utilizar um canal específico, define a largura dos bits,
- * a atenuação, e instala o driver I2S no modo ADC built-in. Após a instalação, o ADC é habilitado.
+ * Tenta configurar o ADC (ADC1) para utilizar um canal específico e o driver I2S no modo ADC built-in.
+ * Caso não seja possível (por exemplo, em simuladores como Wokwi), ativa automaticamente o modo fallback
+ * com leitura direta do ADC no loop.
  *
  * @param channel Canal ADC (do tipo adc1_channel_t) a ser utilizado (ex: ADC1_CHANNEL_0, ADC1_CHANNEL_3, etc.).
  * @param samplePeriod Taxa de amostragem em microsegundos do DMA (padrão: 1000 us).
- * @param callbackFunc Função de callback caso deseje, que será invocada com os dados adquiridos do DMA ate aquele instante.
+ * @param callbackFunc Função de callback que será invocada com os dados adquiridos do DMA até aquele instante.
  * @param callbackPeriod Intervalo de execução do callback em microsegundos (padrão: 100000 us).
  * @param width_bit Largura dos bits para conversão ADC (padrão ADC_WIDTH_BIT_12).
- *
  */
-void adcDmaSetup(adc1_channel_t channel, uint32_t samplePeriod = 1000UL, CallbackADC callbackFunc = nullptr, uint32_t callbackPeriod = 100000UL, adc_bits_width_t width_bit = ADC_WIDTH_BIT_12)
+void adcDmaSetup(
+    adc1_channel_t channel,
+    uint32_t samplePeriod = 1000UL,
+    CallbackADC callbackFunc = nullptr,
+    uint32_t callbackPeriod = 100000UL,
+    adc_bits_width_t width_bit = ADC_WIDTH_BIT_12)
 {
-  const uint32_t sample_rate = (uint32_t)1000000UL / samplePeriod; // Frequencia de amostragem em hz
   _callbackFunc = callbackFunc;
   _callbackPeriod = callbackPeriod;
+  _adc_channel = channel;
+  _adc_fallback_mode = false; // Tenta modo DMA/I2S
 
-  // Adquire energia para o ADC
+  const uint32_t sample_rate = (uint32_t)1000000UL / samplePeriod;
   adc_power_acquire();
-
-  // Configura a largura do ADC
   adc1_config_width(width_bit);
-  // Configura a atenuação para o canal
   adc1_config_channel_atten(channel, ADC_ATTEN_DB_12);
 
-  // Configuração do I2S para operação com ADC via DMA
   i2s_config_t i2s_config = {
       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN),
       .sample_rate = sample_rate,
@@ -93,18 +106,16 @@ void adcDmaSetup(adc1_channel_t channel, uint32_t samplePeriod = 1000UL, Callbac
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256};
 
-  // Instala o driver I2S e verifica o resultado
-  if (i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL) != ESP_OK)
-  {
-    Serial.println("ERR:I2S_INIT");
-    while (1)
-      ;
-  }
+  esp_err_t res = i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
 
-  // Configura o ADC para usar o canal especificado (ADC_UNIT_1 e o canal informado)
-  i2s_set_adc_mode(ADC_UNIT_1, channel);
-  // Habilita o ADC via I2S
-  i2s_adc_enable(I2S_NUM_0);
+  if (res == ESP_OK) {
+    i2s_set_adc_mode(ADC_UNIT_1, channel);
+    i2s_adc_enable(I2S_NUM_0);
+    _adc_fallback_mode = false;
+  } else {
+    Serial.println("WARN: I2S DMA não disponível. Usando fallback de leitura direta do ADC.");
+    _adc_fallback_mode = true;
+  }
 }
 
 /**
@@ -112,18 +123,28 @@ void adcDmaSetup(adc1_channel_t channel, uint32_t samplePeriod = 1000UL, Callbac
  *
  * Esta função deve ser chamada periodicamente no loop principal. Ela lê os dados do ADC
  * via I2S utilizando DMA e, se o intervalo de plotagem tiver decorrido, invoca o callback com os dados.
+ * Caso o modo fallback esteja ativo (I2S não disponível), realiza leituras diretas do ADC para simular um buffer.
  */
 void adcDmaLoop()
 {
-  // Se o intervalo de plotagem foi atingido, chama o callback com os dados lidos
   if (_callbackFunc != nullptr)
   {
     if (micros() - _last_plot >= _callbackPeriod)
     {
-      size_t bytes_read;
-      esp_err_t err = i2s_read(I2S_NUM_0, dma_buffer, sizeof(dma_buffer), &bytes_read, 0);
-      if (err == ESP_OK)
-        _callbackFunc(dma_buffer, (uint16_t)(bytes_read / sizeof(int16_t)));
+      if (!_adc_fallback_mode) {
+        // Modo DMA/I2S
+        size_t bytes_read;
+        esp_err_t err = i2s_read(I2S_NUM_0, dma_buffer, sizeof(dma_buffer), &bytes_read, 0);
+        if (err == ESP_OK) {
+          _callbackFunc(dma_buffer, (uint16_t)(bytes_read / sizeof(int16_t)));
+        }
+      } else {
+        // Fallback: leitura direta, simula um buffer
+        for (int i = 0; i < BUFFER_LEN; ++i) {
+          fallback_buffer[i] = adc1_get_raw((adc1_channel_t)_adc_channel);
+        }
+        _callbackFunc(fallback_buffer, BUFFER_LEN);
+      }
       _last_plot = micros();
     }
   }
