@@ -1,15 +1,15 @@
 /**
  * @file AdcDmaEsp.h
  * @author josuemorais
- * @version 1.1
+ * @version 1.2
  * @date 2024-07-04
  *
  * @brief Driver para leitura de ADC via I2S com DMA no ESP32, com fallback automático para leitura direta em simuladores (ex: Wokwi).
  *
  * Esta biblioteca permite a leitura de dados analógicos usando o periférico I2S
  * com DMA para aquisição de alta performance, mas detecta em tempo de execução
- * se o periférico está disponível. Caso não esteja (por exemplo, no simulador Wokwi),
- * utiliza leitura direta do ADC em modo fallback.
+ * se está rodando no ambiente Wokwi (pela identificação do MAC Address).
+ * Caso esteja, utiliza leitura direta do ADC em modo fallback.
  */
 
 #ifndef ADCDMAESP_H
@@ -17,6 +17,7 @@
 
 #include <driver/i2s.h>
 #include <Arduino.h>
+#include <esp_wifi.h>  // Para esp_read_mac
 
 #define CHANNEL_ADC1 ADC1_CHANNEL_0
 #define CHANNEL_ADC2 ADC1_CHANNEL_3
@@ -59,14 +60,33 @@ uint32_t _callbackPeriod = 0;
 uint32_t _last_plot = 0;
 /** Canal atual do ADC utilizado */
 int _adc_channel = CHANNEL_ADC1;
-/** Modo fallback: leitura direta do ADC se I2S/DMA indisponível */
+/** Modo fallback: leitura direta do ADC se I2S/DMA indisponível ou ambiente Wokwi detectado */
 bool _adc_fallback_mode = false;
+
+/**
+ * @brief Detecta se o código está rodando no simulador Wokwi.
+ *
+ * Faz a leitura do endereço MAC e verifica se corresponde a prefixos típicos de simulação Wokwi.
+ *
+ * @return true se for ambiente Wokwi, false caso contrário.
+ */
+bool detectWokwi()
+{
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    // Wokwi geralmente usa 24:6F:28:xx:xx:xx ou AA:BB:CC:xx:xx:xx
+    if ((mac[0] == 0x24 && mac[1] == 0x6F && mac[2] == 0x28) ||
+        (mac[0] == 0xAA && mac[1] == 0xBB && mac[2] == 0xCC)) {
+        return true;
+    }
+    return false;
+}
 
 /**
  * @brief Configura o ADC via DMA utilizando o I2S built-in do ESP32.
  *
  * Tenta configurar o ADC (ADC1) para utilizar um canal específico e o driver I2S no modo ADC built-in.
- * Caso não seja possível (por exemplo, em simuladores como Wokwi), ativa automaticamente o modo fallback
+ * Caso o periférico não seja possível (ou se ambiente Wokwi for detectado), ativa automaticamente o modo fallback
  * com leitura direta do ADC no loop.
  *
  * @param channel Canal ADC (do tipo adc1_channel_t) a ser utilizado (ex: ADC1_CHANNEL_0, ADC1_CHANNEL_3, etc.).
@@ -86,6 +106,13 @@ void adcDmaSetup(
   _callbackPeriod = callbackPeriod;
   _adc_channel = channel;
   _adc_fallback_mode = false; // Tenta modo DMA/I2S
+
+  // Detecta ambiente Wokwi e ativa fallback automático
+  if (detectWokwi()) {
+      Serial.println("Wokwi detectado pelo endereço MAC! Ativando fallback para leitura direta do ADC.");
+      _adc_fallback_mode = true;
+      return;
+  }
 
   const uint32_t sample_rate = (uint32_t)1000000UL / samplePeriod;
   adc_power_acquire();
@@ -123,7 +150,7 @@ void adcDmaSetup(
  *
  * Esta função deve ser chamada periodicamente no loop principal. Ela lê os dados do ADC
  * via I2S utilizando DMA e, se o intervalo de plotagem tiver decorrido, invoca o callback com os dados.
- * Caso o modo fallback esteja ativo (I2S não disponível), realiza leituras diretas do ADC para simular um buffer.
+ * Caso o modo fallback esteja ativo (I2S não disponível ou ambiente Wokwi), realiza leituras diretas do ADC para simular um buffer.
  */
 void adcDmaLoop()
 {
