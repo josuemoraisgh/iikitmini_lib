@@ -1,6 +1,6 @@
 # IIkitmini
 
-**Versão:** 0.0.1  
+**Versão:** 0.1.8  
 **Autor:** josuemoraisgh
 
 ## Descrição
